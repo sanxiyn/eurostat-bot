@@ -3,13 +3,6 @@ import tomllib
 
 import pandasdmx as sdmx
 
-# See https://en.wikipedia.org/wiki/Nomenclature_of_Territorial_Units_for_Statistics
-COUNTRY_LEVEL = {
-    'DE': 1,
-    'FR': 1,
-    'IT': 2,
-}
-
 def geo_series():
     estat = sdmx.Request('ESTAT')
     codelist = estat.codelist('GEO').codelist['GEO']
@@ -53,9 +46,11 @@ def prepare_query(countries, time, age=None, sex=None, series=None):
         age = [age]
     if not isinstance(sex, list):
         sex = [sex]
+    with open('eurostat.toml', 'rb') as toml:
+        meta = tomllib.load(toml)
     country_levels = []
     for country in countries:
-        level = COUNTRY_LEVEL[country]
+        level = meta['NUTS'][country]
         country_levels.append((country, level))
     nuts = nuts_many(country_levels)
     geo = []
