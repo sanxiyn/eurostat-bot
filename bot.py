@@ -26,7 +26,7 @@ def get_infobox(lines):
             line = line.removeprefix('|')
             key, value = line.split('=', 1)
             key = key.strip()
-            if key.startswith('인구'):
+            if key == '인구' or key.startswith('인구_'):
                 value = value.strip()
                 result.append((i, key, value))
     return result
