@@ -1,4 +1,5 @@
 import argparse
+import tomllib
 
 import pandasdmx as sdmx
 
@@ -7,17 +8,6 @@ COUNTRY_LEVEL = {
     'DE': 1,
     'FR': 1,
     'IT': 2,
-}
-
-QUERY = {
-    # See https://ec.europa.eu/eurostat/databrowser/product/view/demo_r_d2jan
-    'population': {
-        'table': 'DEMO_R_D2JAN',
-        'dtype': 'int64',
-        'levels': ['freq', 'unit', 'nuts', 'time', 'age', 'sex'],
-        'drop_levels': ['freq', 'unit'],
-        'drop_levels_if_singular': ['age', 'sex'],
-    },
 }
 
 def geo_series():
@@ -76,7 +66,9 @@ def prepare_query(countries, time, age=None, sex=None, series=None):
     return key, params
 
 def query(name, key, params):
-    query = QUERY[name]
+    with open('eurostat.toml', 'rb') as toml:
+        queries = tomllib.load(toml)
+    query = queries[name]
     table = query['table']
     dtype = query['dtype']
     levels = query['levels']

@@ -1,0 +1,7 @@
+# https://ec.europa.eu/eurostat/databrowser/product/view/demo_r_d2jan
+[population]
+table = "DEMO_R_D2JAN"
+dtype = "int64"
+levels = ["freq", "unit", "nuts", "time", "age", "sex"]
+drop_levels = ["freq", "unit"]
+drop_levels_if_singular = ["age", "sex"]
