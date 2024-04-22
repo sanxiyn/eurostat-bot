@@ -1,5 +1,7 @@
 import argparse
 import concurrent.futures
+import csv
+import os.path
 import re
 
 import pywikibot
@@ -9,6 +11,8 @@ COUNTRY_TEMPLATE = {
     'DE': '독일의 주',
     'FR': '프랑스의 레지옹',
 }
+
+CSV_OUTPUT = 'wikibase.csv'
 
 INDENT_SIZE = 2
 
@@ -82,7 +86,7 @@ def query_wikibase(ko_title):
     item_page = page.data_item()
     qid = item_page.getID()
     en_title = item_page.getSitelink(wikipedia_en)
-    return ko_title, qid, en_title
+    return qid, ko_title, en_title
 
 def print_hierarchy(country):
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
@@ -90,14 +94,20 @@ def print_hierarchy(country):
     print_indented(0, template_title)
     template_page = get_template_page(wikipedia_ko, template_title)
     navbox = get_navbox_pages(template_page.text)
+    exists = os.path.exists(CSV_OUTPUT)
+    csvfile = open(CSV_OUTPUT, 'a')
+    csvwriter = csv.writer(csvfile)
+    fieldnames = ['qid', 'wikipedia:ko', 'wikipedia:en']
+    if not exists:
+        csvwriter.writerow(fieldnames)
     for group, pages in navbox:
         print_indented(1, group)
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            for result in executor.map(query_wikibase, pages):
-                ko_title, qid, en_title = result
+            for row in executor.map(query_wikibase, pages):
+                qid, ko_title, en_title = row
                 print_indented(2, ko_title)
-                print_indented(3, qid)
-                print_indented(3, en_title)
+                csvwriter.writerow(row)
+    csvfile.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
