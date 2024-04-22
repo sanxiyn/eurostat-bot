@@ -10,6 +10,12 @@ def print_indented(level, line):
     count = INDNT_SIZE * level
     print(' ' * count + line)
 
+def print_inserted(line):
+    print(Fore.GREEN + '+' + line)
+
+def print_deleted(line):
+    print(Fore.RED + '-' + line)
+
 def get_infobox(lines):
     inside_infobox = False
     result = []
@@ -75,7 +81,7 @@ for iso in mapping.index:
         continue
     print_indented(1, f'{iso} {nuts} {qid} {ko_title} {en_title}')
     for i, key, value in infobox:
-        print(Fore.RED + '-' + lines[i])
+        print_deleted(lines[i])
     for i, key, value in infobox:
         if key == '인구':
             line = f'| 인구 = {population}'
@@ -83,7 +89,7 @@ for iso in mapping.index:
             line = f'| 인구_날짜 = {time}-01-01'
         if key == '인구_출처':
             line = '| 인구_출처 = <ref>{{웹 인용 |url=https://doi.org/10.2908/DEMO_R_D2JAN |제목=Population on 1 January by age, sex and NUTS 2 region |웹사이트=[[유럽 연합 통계국]] }}</ref>'
-        print(Fore.GREEN + '+' + line)
+        print_inserted(line)
         lines[i] = line
     print(Style.RESET_ALL, end='')
     input()
