@@ -3,14 +3,10 @@ import concurrent.futures
 import csv
 import os.path
 import re
+import tomllib
 
 import pywikibot
 import pywikibot.site
-
-COUNTRY_TEMPLATE = {
-    'DE': '독일의 주',
-    'FR': '프랑스의 레지옹',
-}
 
 CSV_OUTPUT = 'wikibase.csv'
 
@@ -90,10 +86,12 @@ def query_wikibase(ko_title):
 
 def print_hierarchy(country):
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
-    template_title = COUNTRY_TEMPLATE[country]
-    print_indented(0, template_title)
-    template_page = get_template_page(wikipedia_ko, template_title)
-    navbox = get_navbox_pages(template_page.text)
+    with open('ko.toml', 'rb') as toml:
+        countries = tomllib.load(toml)
+    navbox_title = countries[country]['navbox']
+    print_indented(0, navbox_title)
+    navbox_page = get_template_page(wikipedia_ko, navbox_title)
+    navbox = get_navbox_pages(navbox_page.text)
     exists = os.path.exists(CSV_OUTPUT)
     csvfile = open(CSV_OUTPUT, 'a')
     csvwriter = csv.writer(csvfile)
