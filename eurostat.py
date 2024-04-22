@@ -9,9 +9,7 @@ def geo_series():
     series = sdmx.to_pandas(codelist).name
     return series
 
-def nuts_one(country, level, series=None):
-    if series is None:
-        series = geo_series()
+def nuts_one(country, level, series):
     country_filter = series.index.str.startswith(country)
     level_filter = series.index.str.len() == 2 + level
     current_filter = ~series.str.contains('NUTS', regex=False)
@@ -19,44 +17,26 @@ def nuts_one(country, level, series=None):
     all_filter = country_filter & level_filter & current_filter & extra_filter
     return series[all_filter]
 
-def nuts_many(country_levels, series=None):
-    if series is None:
-        series = geo_series()
+def nuts_many(country_levels, series):
     result = []
     for country, level in country_levels:
         item = nuts_one(country, level, series)
         result.append(item)
     return result
 
-def prepare_query(countries, time, age=None, sex=None, series=None):
-    if age is None:
-        age = 'TOTAL'
-    if sex is None:
-        sex = 'T'
-    if series is None:
-        series = geo_series()
-    if not isinstance(countries, list):
-        countries = [countries]
-    if not isinstance(time, tuple):
-        start = time
-        end = time
-    else:
-        start, end = time
-    if not isinstance(age, list):
-        age = [age]
-    if not isinstance(sex, list):
-        sex = [sex]
+def prepare_query(name, country, time, series):
     with open('eurostat.toml', 'rb') as toml:
-        meta = tomllib.load(toml)
-    country_levels = []
-    for country in countries:
-        level = meta['NUTS'][country]
-        country_levels.append((country, level))
-    nuts = nuts_many(country_levels)
+        queries = meta = tomllib.load(toml)
+    defaults = queries[name]['defaults']
+    level = meta['NUTS'][country]
+    country_levels = [(country, level)]
+    nuts = nuts_many(country_levels, series)
     geo = []
     for nut in nuts:
         geo.extend(nut.index)
-    key = dict(age=age, geo=geo, sex=sex)
+    start = time
+    end = time
+    key = dict(geo=geo, **defaults)
     params = dict(startPeriod=start, endPeriod=end)
     return key, params
 
@@ -65,22 +45,20 @@ def query(name, key, params):
         queries = tomllib.load(toml)
     query = queries[name]
     table = query['table']
-    dtype = query['dtype']
-    levels = query['levels']
-    drop_levels = query['drop_levels']
-    drop_levels_if_singular = query['drop_levels_if_singular']
+    dtype = 'int64'
+    levels = ['nuts', 'time']
     estat = sdmx.Request('ESTAT')
     data = estat.data(table, key=key, params=params)
     series = sdmx.to_pandas(data)
-    series = series.astype(dtype)
     series = series.rename(name)
+    series = series.astype(dtype)
     series = series.rename_axis(index=dict(geo='nuts', TIME_PERIOD='time'))
-    series = series.reorder_levels(levels)
-    index = series.index
-    for name, level in zip(index.names, index.levels):
-        if name in drop_levels_if_singular and len(level) == 1:
+    drop_levels = []
+    for name in series.index.names:
+        if name not in levels:
             drop_levels.append(name)
     series = series.droplevel(drop_levels)
+    series = series.reorder_levels(levels)
     return series
 
 if __name__ == '__main__':
@@ -90,7 +68,8 @@ if __name__ == '__main__':
     parser.add_argument('time')
     args = parser.parse_args()
     print('Querying metadata')
-    key, params = prepare_query(args.country, args.time)
+    series = geo_series()
+    key, params = prepare_query(args.query, args.country, args.time, series)
     print('Querying data')
     series = query(args.query, key, params)
     print(f'Retrieved {series.size} values')
