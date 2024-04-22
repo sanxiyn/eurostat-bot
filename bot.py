@@ -69,10 +69,8 @@ for iso in mapping.index:
     update = False
     for i, key, value in infobox:
         if key == '인구_날짜':
-            old_dates = ['2006', '2012']
-            for old_date in old_dates:
-                if old_date in value:
-                    update = True
+            if str(time) not in value:
+                update = True
     if not update:
         continue
     print_indented(1, f'{iso} {nuts} {qid} {ko_title} {en_title}')
@@ -83,7 +81,8 @@ for iso in mapping.index:
             line = f'| 인구 = {population}'
         if key == '인구_날짜':
             line = f'| 인구_날짜 = {time}-01-01'
-            line += '<ref>{{웹 인용 |url=https://doi.org/10.2908/DEMO_R_D2JAN |제목=Population on 1 January by age, sex and NUTS 2 region |웹사이트=[[유럽 연합 통계국]] }}</ref>'
+        if key == '인구_출처':
+            line = '| 인구_출처 = <ref>{{웹 인용 |url=https://doi.org/10.2908/DEMO_R_D2JAN |제목=Population on 1 January by age, sex and NUTS 2 region |웹사이트=[[유럽 연합 통계국]] }}</ref>'
         print(Fore.GREEN + '+' + line)
         lines[i] = line
     print(Style.RESET_ALL, end='')
