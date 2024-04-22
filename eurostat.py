@@ -14,7 +14,7 @@ QUERY = {
     'population': {
         'table': 'DEMO_R_D2JAN',
         'dtype': 'int64',
-        'levels': ['freq', 'unit', 'geo', 'time', 'age', 'sex'],
+        'levels': ['freq', 'unit', 'nuts', 'time', 'age', 'sex'],
         'drop_levels': ['freq', 'unit'],
         'drop_levels_if_singular': ['age', 'sex'],
     },
@@ -87,7 +87,7 @@ def query(name, key, params):
     series = sdmx.to_pandas(data)
     series = series.astype(dtype)
     series = series.rename(name)
-    series = series.rename_axis(index=dict(TIME_PERIOD='time'))
+    series = series.rename_axis(index=dict(geo='nuts', TIME_PERIOD='time'))
     series = series.reorder_levels(levels)
     index = series.index
     for name, level in zip(index.names, index.levels):
