@@ -1,5 +1,7 @@
 [DE]
-navbox = "독일의 주"
+navbox_title = "독일의 주"
+navbox_group = "주"
 
 [FR]
-navbox = "프랑스의 레지옹"
+navbox_title = "프랑스의 레지옹"
+navbox_group = "본토 레지옹"

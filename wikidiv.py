@@ -88,7 +88,9 @@ def print_hierarchy(country):
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
     with open('ko.toml', 'rb') as toml:
         countries = tomllib.load(toml)
-    navbox_title = countries[country]['navbox']
+    country_info = countries[country]
+    navbox_title = country_info['navbox_title']
+    navbox_group = country_info['navbox_group']
     print_indented(0, navbox_title)
     navbox_page = get_template_page(wikipedia_ko, navbox_title)
     navbox = get_navbox_pages(navbox_page.text)
@@ -99,6 +101,8 @@ def print_hierarchy(country):
     if not exists:
         csvwriter.writerow(fieldnames)
     for group, pages in navbox:
+        if group != navbox_group:
+            continue
         print_indented(1, group)
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for row in executor.map(query_wikibase, pages):
