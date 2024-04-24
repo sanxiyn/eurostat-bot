@@ -84,11 +84,8 @@ def query_wikibase(ko_title):
     en_title = item_page.getSitelink(wikipedia_en)
     return qid, ko_title, en_title
 
-def print_hierarchy(country):
+def print_one(country_info):
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
-    with open('ko.toml', 'rb') as toml:
-        countries = tomllib.load(toml)
-    country_info = countries[country]
     navbox_title = country_info['navbox_title']
     navbox_group = country_info['navbox_group']
     print_indented(0, navbox_title)
@@ -111,8 +108,16 @@ def print_hierarchy(country):
                 csvwriter.writerow(row)
     csvfile.close()
 
+def print_many(lang):
+    filename = f'{lang}.toml'
+    with open(filename, 'rb') as toml:
+        countries = tomllib.load(toml)
+    for country in sorted(countries):
+        country_info = countries[country]
+        print_one(country_info)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('country')
+    parser.add_argument('lang')
     args = parser.parse_args()
-    print_hierarchy(args.country)
+    print_many(args.lang)
