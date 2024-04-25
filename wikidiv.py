@@ -6,7 +6,8 @@ import re
 import tomllib
 
 import pywikibot
-import pywikibot.site
+from pywikibot.page import BasePage
+from pywikibot.site import BaseSite
 
 CSV_OUTPUT = 'wikibase.csv'
 
@@ -14,34 +15,34 @@ INDENT_SIZE = 2
 
 LINK_PATTERN = re.compile(r'\[\[([^\]]+)\]\]')
 
-def replace_with_page(match):
+def replace_with_page(match: re.Match) -> str:
     link = match.group(1)
     if '|' in link:
         page, text = link.split('|', 1)
         return page
     return link
 
-def replace_with_text(match):
+def replace_with_text(match: re.Match) -> str:
     link = match.group(1)
     if '|' in link:
         page, text = link.split('|', 1)
         return text
     return link
 
-def replace_link_with_page(text):
+def replace_link_with_page(text: str) -> str:
     return LINK_PATTERN.sub(replace_with_page, text)
 
-def replace_link_with_text(text):
+def replace_link_with_text(text: str) -> str:
     return LINK_PATTERN.sub(replace_with_text, text)
 
-def print_indented(level, line):
+def print_indented(level: int, line: str) -> None:
     count = INDENT_SIZE * level
     print(' ' * count + line)
 
-def get_navbox_pages(text):
+def get_navbox_pages(text: str) -> list[tuple[str, list[str]]]:
     inside_navbox = False
     groups = []
-    current_list = []
+    current_list: list[str] = []
     lines = text.splitlines()
     for line in lines:
         if line.startswith('{{둘러보기 상자'):
@@ -69,13 +70,13 @@ def get_navbox_pages(text):
             current_list.append(page)
     return groups
 
-def get_template_page(site, title):
-    template_ns = pywikibot.site.Namespace.TEMPLATE
+def get_template_page(site: BaseSite, title: str) -> BasePage:
+    template_ns = pywikibot.site.Namespace.TEMPLATE  # type: ignore[attr-defined]
     prefix = site.namespaces[template_ns].custom_prefix()
     page = pywikibot.Page(site, prefix + title)
     return page
 
-def query_wikibase(ko_title):
+def query_wikibase(ko_title: str) -> tuple[str, str, str]:
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
     wikipedia_en = pywikibot.Site('wikipedia:en')
     page = pywikibot.Page(wikipedia_ko, ko_title)
@@ -84,7 +85,7 @@ def query_wikibase(ko_title):
     en_title = item_page.getSitelink(wikipedia_en)
     return qid, ko_title, en_title
 
-def print_one(country_info):
+def print_one(country_info: dict[str, str]) -> None:
     wikipedia_ko = pywikibot.Site('wikipedia:ko')
     navbox_title = country_info['navbox_title']
     navbox_group = country_info['navbox_group']
@@ -108,7 +109,7 @@ def print_one(country_info):
                 csvwriter.writerow(row)
     csvfile.close()
 
-def print_many(lang):
+def print_many(lang: str) -> None:
     filename = f'{lang}.toml'
     with open(filename, 'rb') as toml:
         countries = tomllib.load(toml)
