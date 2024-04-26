@@ -3,6 +3,13 @@ import tomllib
 
 import pandasdmx as sdmx
 
+def load_toml(filename):
+    with open(filename, 'rb') as toml:
+        info = tomllib.load(toml)
+    queries = {key: info[key] for key in info if key.islower()}
+    meta = {key: info[key] for key in info if key.isupper()}
+    return queries, meta
+
 def geo_series():
     estat = sdmx.Request('ESTAT')
     codelist = estat.codelist('GEO').codelist['GEO']
@@ -25,9 +32,9 @@ def nuts_many(country_levels, series):
     return result
 
 def prepare_query(name, country, time, series):
-    with open('eurostat.toml', 'rb') as toml:
-        queries = meta = tomllib.load(toml)
-    defaults = queries[name]['defaults']
+    queries, meta = load_toml('eurostat.toml')
+    query = queries[name]
+    defaults = query['defaults']
     level = meta['NUTS'][country]
     country_levels = [(country, level)]
     nuts = nuts_many(country_levels, series)
@@ -41,8 +48,7 @@ def prepare_query(name, country, time, series):
     return key, params
 
 def query(name, key, params):
-    with open('eurostat.toml', 'rb') as toml:
-        queries = tomllib.load(toml)
+    queries, meta = load_toml('eurostat.toml')
     query = queries[name]
     table = query['table']
     dtype = 'int64'
