@@ -4,6 +4,11 @@ DE = 1
 FR = 1
 IT = 2
 
+# https://ec.europa.eu/eurostat/databrowser/product/view/reg_area3
+[area]
+table = "REG_AREA3"
+defaults = { landuse = "L0008" }
+
 # https://ec.europa.eu/eurostat/databrowser/product/view/demo_r_d2jan
 [population]
 table = "DEMO_R_D2JAN"
