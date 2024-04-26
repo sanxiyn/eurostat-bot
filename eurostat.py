@@ -6,8 +6,14 @@ import pandasdmx as sdmx
 def load_toml(filename):
     with open(filename, 'rb') as toml:
         info = tomllib.load(toml)
-    queries = {key: info[key] for key in info if key.islower()}
-    meta = {key: info[key] for key in info if key.isupper()}
+    queries = {}
+    meta = {}
+    for key in info:
+        if key.islower():
+            queries[key] = info[key]
+            queries[key]['name'] = key
+        elif key.isupper():
+            meta[key] = info[key]
     return queries, meta
 
 def geo_series():
