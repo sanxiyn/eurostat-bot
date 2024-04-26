@@ -1,6 +1,7 @@
 import argparse
 import tomllib
 
+import pandas
 import pandasdmx as sdmx
 
 def load_toml(filename):
@@ -37,10 +38,8 @@ def nuts_many(country_levels, series):
         result.append(item)
     return result
 
-def prepare_query(name, country, time, series):
-    queries, meta = load_toml('eurostat.toml')
-    query = queries[name]
-    defaults = query['defaults']
+def prepare_query(query_info, meta, country, time, series):
+    defaults = query_info['defaults']
     level = meta['NUTS'][country]
     country_levels = [(country, level)]
     nuts = nuts_many(country_levels, series)
@@ -53,10 +52,9 @@ def prepare_query(name, country, time, series):
     params = dict(startPeriod=start, endPeriod=end)
     return key, params
 
-def query(name, key, params):
-    queries, meta = load_toml('eurostat.toml')
-    query = queries[name]
-    table = query['table']
+def execute_query(query_info, key, params):
+    name = query_info['name']
+    table = query_info['table']
     dtype = 'int64'
     levels = ['nuts', 'time']
     estat = sdmx.Request('ESTAT')
@@ -73,18 +71,32 @@ def query(name, key, params):
     series = series.reorder_levels(levels)
     return series
 
+def query_one(query_info, meta, country, time, geo_series):
+    name = query_info['name']
+    table = query_info['table']
+    key, params = prepare_query(query_info, meta, country, time, geo_series)
+    print(f'Querying {name} (table: {table})')
+    series = execute_query(query_info, key, params)
+    return series
+
+def query_many(country, time):
+    queries, meta = load_toml('eurostat.toml')
+    print('Querying metadata')
+    geo = geo_series()
+    stats = {}
+    for query in sorted(queries):
+        query_info = queries[query]
+        series = query_one(query_info, meta, country, time, geo)
+        stats[query] = series
+    dataframe = pandas.DataFrame(stats)
+    return dataframe
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('query')
     parser.add_argument('country')
     parser.add_argument('time')
     args = parser.parse_args()
-    print('Querying metadata')
-    series = geo_series()
-    key, params = prepare_query(args.query, args.country, args.time, series)
-    print('Querying data')
-    series = query(args.query, key, params)
-    print(f'Retrieved {series.size} values')
+    dataframe = query_many(args.country, args.time)
     filename = f'{args.country}-{args.time}.csv'
-    series.to_csv(filename)
+    dataframe.to_csv(filename)
     print(f'Wrote {filename}')
