@@ -1,8 +1,14 @@
 import argparse
+import logging
 import tomllib
+import warnings
+
+warnings.filterwarnings('ignore', module='pandasdmx')
 
 import pandas
 import pandasdmx as sdmx
+
+logging.getLogger('pandasdmx.reader.sdmxml').setLevel(logging.CRITICAL)
 
 def load_toml(filename):
     with open(filename, 'rb') as toml:
