@@ -1,1 +1,3 @@
+pandaSDMX
+pandas-stubs
 pywikibot

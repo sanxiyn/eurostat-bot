@@ -2,15 +2,18 @@ import argparse
 import logging
 import tomllib
 import warnings
+from typing import Any
 
 warnings.filterwarnings('ignore', module='pandasdmx')
 
-import pandas
-import pandasdmx as sdmx
+import pandasdmx as sdmx  # type: ignore
+from pandas import DataFrame, Series
 
 logging.getLogger('pandasdmx.reader.sdmxml').setLevel(logging.CRITICAL)
 
-def load_toml(filename):
+StrDict = dict[str, Any]
+
+def load_toml(filename: str) -> tuple[StrDict, StrDict]:
     with open(filename, 'rb') as toml:
         info = tomllib.load(toml)
     queries = {}
@@ -23,13 +26,13 @@ def load_toml(filename):
             meta[key] = info[key]
     return queries, meta
 
-def geo_series():
+def geo_series() -> Series:
     estat = sdmx.Request('ESTAT')
     codelist = estat.codelist('GEO').codelist['GEO']
     series = sdmx.to_pandas(codelist).name
     return series
 
-def nuts_one(country, level, series):
+def nuts_one(country: str, level: int, series: Series) -> Series:
     country_filter = series.index.str.startswith(country)
     level_filter = series.index.str.len() == 2 + level
     current_filter = ~series.str.contains('NUTS', regex=False)
@@ -37,19 +40,19 @@ def nuts_one(country, level, series):
     all_filter = country_filter & level_filter & current_filter & extra_filter
     return series[all_filter]
 
-def nuts_many(country_levels, series):
+def nuts_many(country_levels: list[tuple[str, int]], series: Series) -> list[Series]:
     result = []
     for country, level in country_levels:
         item = nuts_one(country, level, series)
         result.append(item)
     return result
 
-def prepare_query(query_info, meta, country, time, series):
+def prepare_query(query_info: StrDict, meta: StrDict, country: str, time: str, series: Series) -> tuple[StrDict, StrDict]:
     defaults = query_info['defaults']
     level = meta['NUTS'][country]
     country_levels = [(country, level)]
     nuts = nuts_many(country_levels, series)
-    geo = []
+    geo: list[str] = []
     for nut in nuts:
         geo.extend(nut.index)
     start = time
@@ -58,7 +61,7 @@ def prepare_query(query_info, meta, country, time, series):
     params = dict(startPeriod=start, endPeriod=end)
     return key, params
 
-def execute_query(query_info, key, params):
+def execute_query(query_info: StrDict, key: StrDict, params: StrDict) -> Series:
     name = query_info['name']
     table = query_info['table']
     dtype = 'int64'
@@ -77,7 +80,7 @@ def execute_query(query_info, key, params):
     series = series.reorder_levels(levels)
     return series
 
-def query_one(query_info, meta, country, time, geo_series):
+def query_one(query_info: StrDict, meta: StrDict, country: str, time: str, geo_series: Series) -> Series:
     name = query_info['name']
     table = query_info['table']
     key, params = prepare_query(query_info, meta, country, time, geo_series)
@@ -85,7 +88,7 @@ def query_one(query_info, meta, country, time, geo_series):
     series = execute_query(query_info, key, params)
     return series
 
-def query_many(country, time):
+def query_many(country: str, time: str) -> DataFrame:
     queries, meta = load_toml('eurostat.toml')
     print('Querying metadata')
     geo = geo_series()
@@ -94,7 +97,7 @@ def query_many(country, time):
         query_info = queries[query]
         series = query_one(query_info, meta, country, time, geo)
         stats[query] = series
-    dataframe = pandas.DataFrame(stats)
+    dataframe = DataFrame(stats)
     return dataframe
 
 if __name__ == '__main__':
